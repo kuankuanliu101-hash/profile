@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>夢幻女孩檔案簿 🎀</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-purple-50 to-indigo-100 min-h-screen p-3 sm:p-8 text-slate-800">
+
+  <div id="app" class="max-w-4xl mx-auto bg-white/85 backdrop-blur-2xl rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[0_20px_60px_rgba(255,105,180,0.18)] border border-white relative overflow-hidden">
+    
+    <!-- Toast Notification -->
+    <div v-if="toastMessage" class="fixed top-5 right-5 z-50 bg-pink-600 text-white px-5 py-3 rounded-2xl shadow-xl font-bold text-sm flex items-center gap-2 animate-bounce">
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+      {{ toastMessage }}
+    </div>
+
+    <!-- Background Sparkles Decor -->
+    <div class="absolute inset-0 pointer-events-none opacity-20">
+      <div class="absolute top-8 right-8 text-pink-300 text-6xl"><i class="fa-solid fa-sparkles"></i></div>
+      <div class="absolute bottom-16 left-8 text-purple-300 text-6xl"><i class="fa-solid fa-heart"></i></div>
+    </div>
+
+    <!-- Page Header -->
+    <header class="text-center mb-8 sm:mb-10 relative z-10">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-100/80 text-pink-600 font-bold text-xs mb-3 shadow-sm border border-pink-200">
+        <i class="fa-solid fa-sparkles"></i> 專屬於妳的夢幻個人檔案卡片製作所
+      </div>
+      <h1 class="text-2xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 tracking-tight mb-2">
+        {{ formData.name || 'Joyce' }} の 夢幻女孩檔案簿 🎀
+      </h1>
+      <p class="text-pink-500 font-medium italic text-xs sm:text-base">
+        ✨ 每一個妳，都是獨一無二且璀璨的星辰 ✨
+      </p>
+    </header>
+
+    <!-- FORM SECTION -->
+    <form v-if="!submitted" @submit.prevent="handleSubmit" class="space-y-8 relative z-10">
+      
+      <!-- Avatar Section -->
+      <section class="bg-white/90 p-5 sm:p-6 rounded-3xl border border-pink-100 shadow-sm space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-pink-600 flex items-center gap-2">
+              <i class="fa-solid fa-image"></i> 個人頭像與夢幻圖像設定
+            </h2>
+            <p class="text-xs text-pink-400 mt-1">
+              點擊下方的畫風即可套用頭像，或是自由微調專屬裝扮！
+            </p>
+          </div>
+          <button
+            type="button"
+            @click="generateRandomAvatar"
+            :disabled="isGeneratingAvatar"
+            class="px-4 py-2.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg hover:scale-105 transition-all disabled:opacity-50 cursor-pointer"
+          >
+            <i class="fa-solid fa-wand-magic-sparkles" :class="{'fa-spin': isGeneratingAvatar}"></i>
+            <span>{{ isGeneratingAvatar ? '✨ 動態繪製中...' : '🎲 隨機生成全新夢幻頭像' }}</span>
+          </button>
+        </div>
+
+        <!-- Avatar Controls -->
+        <div class="bg-pink-50/60 p-4 rounded-2xl border border-pink-100 space-y-3">
+          <span class="text-xs font-bold text-pink-700 block">🎨 自由微調專屬裝扮與造型：</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="text-[11px] font-bold text-slate-500 block mb-1">💇‍♀️ 髮型款式</label>
+              <select v-model="avatarOptions.hairStyle" @change="updateCustomAvatar" class="w-full p-2 bg-white rounded-xl border border-pink-200 text-slate-700 font-medium outline-none">
+                <option v-for="h in hairStyles" :key="h.id" :value="h.id">{{ h.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-500 block mb-1">🌸 髮色系統</label>
+              <select v-model="avatarOptions.hairColorId" @change="updateCustomAvatar" class="w-full p-2 bg-white rounded-xl border border-pink-200 text-slate-700 font-medium outline-none">
+                <option v-for="c in hairColors" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-500 block mb-1">👀 瞳孔彩虹色</label>
+              <select v-model="avatarOptions.eyeColor" @change="updateCustomAvatar" class="w-full p-2 bg-white rounded-xl border border-pink-200 text-slate-700 font-medium outline-none">
+                <option v-for="e in eyeColors" :key="e.id" :value="e.color">{{ e.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-500 block mb-1">👑 專屬飾品</label>
+              <select v-model="avatarOptions.accessory" @change="updateCustomAvatar" class="w-full p-2 bg-white rounded-xl border border-pink-200 text-slate-700 font-medium outline-none">
+                <option v-for="a in accessories" :key="a.id" :value="a.id">{{ a.name }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preset Avatars Selection (10 Avatars) -->
+        <div>
+          <label class="text-xs font-bold text-pink-600 mb-2.5 flex items-center gap-1 block">
+            <span>🌸 手繪可愛女孩預設風格（共 10 款）：</span>
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-2">
+            <button
+              v-for="girl in cuteGirlAvatars"
+              :key="girl.id"
+              type="button"
+              @click="selectAvatar(girl)"
+              class="p-2 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer"
+              :class="customAvatarUrl === girl.url ? 'bg-pink-100/80 border-pink-500 scale-105 shadow-md ring-2 ring-pink-300' : 'bg-white border-slate-100 hover:border-pink-300 hover:bg-pink-50/50'"
+            >
+              <div class="relative">
+                <img :src="girl.url" :alt="girl.name" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm bg-pink-50" />
+                <span v-if="customAvatarUrl === girl.url" class="absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">✓</span>
+              </div>
+              <div class="text-center">
+                <p class="text-[11px] font-bold text-slate-700">{{ girl.name }}</p>
+                <span class="text-[9px] font-semibold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full border border-pink-100 inline-block">{{ girl.tag }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Avatar Bar -->
+        <div class="flex items-center justify-between bg-purple-50/80 p-3.5 rounded-2xl border border-purple-200">
+          <div class="flex items-center gap-3">
+            <img :src="customAvatarUrl" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-pink-400 shadow-sm bg-white" />
+            <div>
+              <span class="text-xs font-bold text-purple-800 block">目前套用：夢幻特製頭像</span>
+              <span class="text-[11px] text-purple-600">匯出圖卡時將以高清無扭曲比例繪製 ✨</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 基本資料 (Basic Info) -->
+      <section class="bg-white/90 p-5 sm:p-6 rounded-3xl border border-purple-100 shadow-sm space-y-4">
+        <h2 class="text-lg sm:text-xl font-bold text-purple-600 flex items-center gap-2">
+          <i class="fa-solid fa-user"></i> 基本資料 (Basic Info)
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">中文姓名</label>
+            <input type="text" v-model="formData.name" class="w-full p-3 bg-purple-50/50 rounded-2xl border border-purple-100 font-medium text-sm focus:ring-2 focus:ring-purple-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">英文名字</label>
+            <input type="text" v-model="formData.engName" class="w-full p-3 bg-purple-50/50 rounded-2xl border border-purple-100 font-medium text-sm focus:ring-2 focus:ring-purple-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">手機號碼</label>
+            <input type="text" v-model="formData.phone" class="w-full p-3 bg-purple-50/50 rounded-2xl border border-purple-100 font-medium text-sm focus:ring-2 focus:ring-purple-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">生日日期</label>
+            <input type="text" v-model="formData.birthday" class="w-full p-3 bg-purple-50/50 rounded-2xl border border-purple-100 font-medium text-sm focus:ring-2 focus:ring-purple-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">星座</label>
+            <input type="text" v-model="formData.zodiac" class="w-full p-3 bg-purple-50/50 rounded-2xl border border-purple-100 font-medium text-sm focus:ring-2 focus:ring-purple-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">MBTI 人格特質</label>
+            <input type="text" v-model="formData.mbti" class="w-full p-3 bg-purple-50/50 rounded-2xl border border-purple-100 font-medium text-sm focus:ring-2 focus:ring-purple-300 outline-none" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 生活點滴 (Daily Vibe) -->
+      <section class="bg-white/90 p-5 sm:p-6 rounded-3xl border border-pink-100 shadow-sm space-y-4">
+        <h2 class="text-lg sm:text-xl font-bold text-pink-600 flex items-center gap-2">
+          <i class="fa-solid fa-mug-hot"></i> 生活點滴 (Daily Vibe)
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">居住縣市</label>
+            <input type="text" v-model="formData.residence" class="w-full p-3 bg-pink-50/50 rounded-2xl border border-pink-100 font-medium text-sm focus:ring-2 focus:ring-pink-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">通勤方式</label>
+            <input type="text" v-model="formData.commute" class="w-full p-3 bg-pink-50/50 rounded-2xl border border-pink-100 font-medium text-sm focus:ring-2 focus:ring-pink-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">就寢時間</label>
+            <input type="text" v-model="formData.sleepTime" class="w-full p-3 bg-pink-50/50 rounded-2xl border border-pink-100 font-medium text-sm focus:ring-2 focus:ring-pink-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">家中成員</label>
+            <input type="text" v-model="formData.family" class="w-full p-3 bg-pink-50/50 rounded-2xl border border-pink-100 font-medium text-sm focus:ring-2 focus:ring-pink-300 outline-none" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-bold text-slate-600 block mb-1">形容自己的三個詞</label>
+            <input type="text" v-model="formData.adjectives" class="w-full p-3 bg-pink-50/50 rounded-2xl border border-pink-100 font-medium text-sm focus:ring-2 focus:ring-pink-300 outline-none" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-bold text-slate-600 block mb-1">興趣手帳 & 收藏</label>
+            <input type="text" v-model="formData.customInterest" class="w-full p-3 bg-pink-50/50 rounded-2xl border border-pink-100 font-medium text-sm focus:ring-2 focus:ring-pink-300 outline-none" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 深度探索 (Deep Dive) -->
+      <section class="bg-white/90 p-5 sm:p-6 rounded-3xl border border-indigo-100 shadow-sm space-y-4">
+        <h2 class="text-lg sm:text-xl font-bold text-indigo-600 flex items-center gap-2">
+          <i class="fa-solid fa-brain"></i> 深度特質探索 (Deep Dive)
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">💪 擅長專長 (Strengths)</label>
+            <input type="text" v-model="formData.customStrength" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">🔋 滿血復原法 & 壓力釋放</label>
+            <input type="text" v-model="formData.stressRelief" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-slate-600 block mb-1">最拿手科目</label>
+              <input type="text" v-model="formData.strengthSubject" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-600 block mb-1">最頭痛科目</label>
+              <input type="text" v-model="formData.weakSubject" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">🎯 高二想達成的目標</label>
+            <textarea rows="2" v-model="formData.goal" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none resize-none"></textarea>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">🎓 大學可能想念的科系</label>
+            <input type="text" v-model="formData.futureMajor" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">🌟 未來想成為 / 從事的職業</label>
+            <input type="text" v-model="formData.futureCareer" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">⚡ 我的地雷與相處禁忌</label>
+            <input type="text" v-model="formData.peeves" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">🤫 不為人知的小秘密</label>
+            <input type="text" v-model="formData.secret" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">🌈 自我鼓勵座右銘</label>
+            <input type="text" v-model="formData.encouragement" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600 block mb-1">💌 想對 {{ formData.name || 'Joyce' }} / 大家說的悄悄話</label>
+            <textarea rows="2" v-model="formData.joyceNote" class="w-full p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 font-medium text-sm focus:ring-2 focus:ring-indigo-300 outline-none resize-none"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <button
+        type="submit"
+        class="w-full py-5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white rounded-3xl font-black text-xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>生成專屬夢幻卡片 💌</span>
+      </button>
+    </form>
+
+    <!-- CARD PREVIEW SECTION -->
+    <div v-else class="space-y-8 relative z-10">
+      
+      <!-- Action Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-pink-100 shadow-sm">
+        <button
+          type="button"
+          @click="submitted = false"
+          class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer"
+        >
+          <i class="fa-solid fa-arrow-left"></i> 返回編輯資料
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="generateRandomAvatar"
+            class="px-4 py-2.5 bg-pink-50 hover:bg-pink-100 text-pink-600 font-bold rounded-2xl text-xs flex items-center gap-2 border border-pink-200 transition-all cursor-pointer"
+          >
+            <i class="fa-solid fa-rotate"></i> 重換動態頭像
+          </button>
+          <button
+            type="button"
+            @click="downloadCard"
+            class="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer"
+          >
+            <i class="fa-solid fa-download"></i> 下載夢幻圖卡 (PNG)
+          </button>
+        </div>
+      </div>
+
+      <!-- Generated Profile Card Container -->
+      <div class="bg-gradient-to-b from-pink-50/80 via-purple-50/50 to-white p-6 sm:p-10 rounded-[2.5rem] border-2 border-pink-200 shadow-xl space-y-8">
+        
+        <!-- Header & Avatar -->
+        <div class="text-center space-y-4">
+          <div class="relative inline-block">
+            <img :src="customAvatarUrl" :alt="formData.name" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white shadow-lg mx-auto bg-white" />
+            <div class="absolute -bottom-2 right-1 bg-pink-500 text-white p-2 rounded-full shadow-md text-xs">
+              <i class="fa-solid fa-sparkles"></i>
+            </div>
+          </div>
+
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800">
+              {{ formData.name || 'Joyce' }} <span class="text-pink-500 font-medium text-lg">({{ formData.engName || 'Angel' }})</span>
+            </h2>
+            <div class="flex items-center justify-center gap-2 mt-2 flex-wrap">
+              <span class="px-3 py-1 rounded-full bg-pink-100 text-pink-600 font-bold text-xs">{{ formData.zodiac }}</span>
+              <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-600 font-bold text-xs">{{ formData.mbti }}</span>
+              <span class="px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 font-bold text-xs">📍 {{ formData.residence }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Highlights Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm font-medium">
+          <div class="bg-white/80 p-3.5 rounded-2xl border border-pink-100 flex items-center gap-2">
+            <i class="fa-solid fa-phone text-pink-500"></i>
+            <span class="text-slate-500">電話：</span>
+            <span class="font-bold text-slate-700">{{ formData.phone }}</span>
+          </div>
+          <div class="bg-white/80 p-3.5 rounded-2xl border border-pink-100 flex items-center gap-2">
+            <i class="fa-solid fa-calendar text-purple-500"></i>
+            <span class="text-slate-500">生日：</span>
+            <span class="font-bold text-slate-700">{{ formData.birthday }}</span>
+          </div>
+          <div class="bg-white/80 p-3.5 rounded-2xl border border-pink-100 flex items-center gap-2">
+            <i class="fa-solid fa-bus text-indigo-500"></i>
+            <span class="text-slate-500">通勤：</span>
+            <span class="font-bold text-slate-700">{{ formData.commute }}</span>
+          </div>
+          <div class="bg-white/80 p-3.5 rounded-2xl border border-pink-100 flex items-center gap-2">
+            <i class="fa-solid fa-moon text-indigo-500"></i>
+            <span class="text-slate-500">就寢：</span>
+            <span class="font-bold text-slate-700">{{ formData.sleepTime }}</span>
+          </div>
+        </div>
+
+        <!-- Detailed Cards Sections -->
+        <div class="space-y-4 text-sm">
+          <div class="bg-white p-5 rounded-2xl border border-purple-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-purple-600 flex items-center gap-2"><i class="fa-solid fa-award"></i> 個人擅長專長 (Strengths)</h3>
+            <p class="text-slate-700 font-medium">{{ formData.customStrength }}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-emerald-600 flex items-center gap-2"><i class="fa-solid fa-fire"></i> 滿血復原法 & 壓力釋放</h3>
+            <p class="text-slate-700 font-medium">{{ formData.stressRelief }}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-amber-600 flex items-center gap-2"><i class="fa-solid fa-book"></i> 拿手 vs 頭痛科目</h3>
+            <p class="text-slate-700 font-medium">
+              <span class="text-emerald-600 font-bold">最拿手：</span>{{ formData.strengthSubject }} &nbsp;|&nbsp; 
+              <span class="text-amber-600 font-bold"> 最頭痛：</span>{{ formData.weakSubject }}
+            </p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-cyan-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-cyan-700 flex items-center gap-2"><i class="fa-solid fa-bullseye"></i> 高二想達成的目標</h3>
+            <p class="text-slate-700 font-medium">{{ formData.goal }}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-indigo-700 flex items-center gap-2"><i class="fa-solid fa-graduation-cap"></i> 大學可能想念的科系</h3>
+            <p class="text-slate-700 font-medium">{{ formData.futureMajor }}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-purple-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-purple-700 flex items-center gap-2"><i class="fa-solid fa-briefcase"></i> 未來想成為 / 從事的職業</h3>
+            <p class="text-slate-700 font-medium">{{ formData.futureCareer }}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm space-y-1">
+            <h3 class="font-bold text-rose-600 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> 我的地雷與相處禁忌</h3>
+            <p class="text-slate-700 font-medium">{{ formData.peeves }}</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-purple-100 shadow-sm space-y-1">
+              <h3 class="font-bold text-purple-600 flex items-center gap-2"><i class="fa-solid fa-gift"></i> 不為人知的小秘密</h3>
+              <p class="text-slate-700 font-medium">{{ formData.secret }}</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-pink-100 shadow-sm space-y-1">
+              <h3 class="font-bold text-pink-600 flex items-center gap-2"><i class="fa-solid fa-star"></i> 自我鼓勵座右銘</h3>
+              <p class="text-slate-700 font-medium">{{ formData.encouragement }}</p>
+            </div>
+          </div>
+
+          <div class="bg-pink-100/60 p-5 rounded-2xl border border-pink-200 shadow-sm space-y-1">
+            <h3 class="font-bold text-pink-700 flex items-center gap-2"><i class="fa-solid fa-comment-dots"></i> 想對 {{ formData.name || 'Joyce' }} / 大家說的悄悄話</h3>
+            <p class="text-pink-900 font-medium italic">"{{ formData.joyceNote }}"</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, reactive } = Vue;
+
+    const CUTE_GIRL_AVATARS = [
+      { id: '1', name: '夢幻少女 1', tag: '甜美', url: 'https://docs.google.com/drawings/d/e/2PACX-1vT_B10fkxvgbT5wBRy29Q7N0uJwDKyb1B9YOHFdJY-gNz53YbKJ0xtcyrk64XiXIDKD1GAsEjf-kOUB/pub?w=960&h=720' },
+      { id: '2', name: '夢幻少女 2', tag: '活潑', url: 'https://docs.google.com/drawings/d/e/2PACX-1vT55LCeL7igeuyxtxrRLQpVafF31ftW4AjLbEN3gw-yX4w0E-vP6kfuo9Ho4ni2kcqm90BHGHYPtOZ-/pub?w=960&h=720' },
+      { id: '3', name: '夢幻少女 3', tag: '氣質', url: 'https://docs.google.com/drawings/d/e/2PACX-1vRAxV0NIyuj7cTne0VRgu1GGwgZ3Teh4NS5wlHkogLkRbM4SjFhpKXjKh-KkULMCQWhubWRkuAl2LFo/pub?w=960&h=720' },
+      { id: '4', name: '夢幻少女 4', tag: '可愛', url: 'https://docs.google.com/drawings/d/e/2PACX-1vTpxfdFiW6MzANXOWzSTjLU6lcb2wazSKhteTim7r8kFjOJ4mZY-1i0_RnFo5KtYxougwQacXRVDZ4s/pub?w=960&h=720' },
+      { id: '5', name: '夢幻少女 5', tag: '優雅', url: 'https://docs.google.com/drawings/d/e/2PACX-1vTd9MYcAZobJq-HT0sGzGiUJXQPe_mDbqhOMOM-bPJTPKP1Blwzq3dYhSsDUzSB8eUG3psvPDvP1RQx/pub?w=960&h=720' },
+      { id: '6', name: '夢幻少女 6', tag: '俏皮', url: 'https://docs.google.com/drawings/d/e/2PACX-1vRIYLWkC8jCjoAtXSVyPsnDNG8f6xxLvT7Tw5S7INZqer8bvfYyMJWUwpPMVq9SJDnsp7E2UQuux7DP/pub?w=960&h=720' },
+      { id: '7', name: '夢幻少女 7', tag: '溫柔', url: 'https://docs.google.com/drawings/d/e/2PACX-1vTpv-3GE03duSWVtZpHndivtU3ScYPjzPzMR2ucPgD0d0OtJRN04M0XY1KFgK8UJhZxIgYj3224-tmh/pub?w=960&h=720' },
+      { id: '8', name: '夢幻少女 8', tag: '甜酷', url: 'https://docs.google.com/drawings/d/e/2PACX-1vQZnTiFVFUdtih9jNVHEl9PO--ndK1S3Bcop6b7JCBrkf7oYqV_oM7UjKnzVI9ecwifaLs2WjQIJGIe/pub?w=960&h=720' },
+      { id: '9', name: '夢幻少女 9', tag: '靈動', url: 'https://docs.google.com/drawings/d/e/2PACX-1vTbxCSmScL1mjof0GYKLJZI4GrkAVRd-opUPdlBICpyP6k9Q4_q7Vw2NC4tcuipsFgFS_JdC109_H9B/pub?w=960&h=720' },
+      { id: '10', name: '夢幻少女 10', tag: '夢幻', url: 'https://docs.google.com/drawings/d/e/2PACX-1vRIKcBcSE8m7wBEkYNGywfbPgGeIUUKpQmn1Mx3z3l5KrwwJHECWB9F6QhwYaHlOJSor1TVbbY08qgY/pub?w=960&h=720' }
+    ];
+
+    const HAIR_STYLES = [
+      { id: 'twintail', name: '雙馬尾' },
+      { id: 'long_wavy', name: '浪漫波浪長髮' },
+      { id: 'beret_bob', name: '貝雷帽短髮' },
+      { id: 'high_bun', name: '丸子頭文青' },
+      { id: 'cat_ears', name: '貓耳軟萌長髮' },
+      { id: 'princess', name: '長捲髮皇冠' }
+    ];
+
+    const HAIR_COLORS = [
+      { id: 'pink', name: '櫻花粉', start: '#FF69B4', end: '#C71585' },
+      { id: 'gold', name: '耀眼金', start: '#FFE066', end: '#FFB300' },
+      { id: 'purple', name: '夢幻紫', start: '#B388FF', end: '#6200EA' },
+      { id: 'brown', name: '可可棕', start: '#A1887F', end: '#4E342E' },
+      { id: 'mint', name: '薄荷綠', start: '#80CBC4', end: '#00695C' },
+      { id: 'coral', name: '蜜桃珊瑚', start: '#FFAB91', end: '#D84315' }
+    ];
+
+    const EYE_COLORS = [
+      { id: 'ruby', name: '寶石紅', color: '#D81B60' },
+      { id: 'emerald', name: '翡翠綠', color: '#2E8B57' },
+      { id: 'sapphire', name: '深海藍', color: '#1976D2' },
+      { id: 'amber', name: '琥珀金', color: '#F57F17' },
+      { id: 'violet', name: '紫羅蘭', color: '#7B1FA2' }
+    ];
+
+    const ACCESSORIES = [
+      { id: 'ribbon', name: '蝴蝶結' },
+      { id: 'crown', name: '小皇冠' },
+      { id: 'cat', name: '貓耳' },
+      { id: 'headphones', name: '耳機' },
+      { id: 'glasses', name: '圓框眼鏡' },
+      { id: 'flower', name: '櫻花髮飾' }
+    ];
+
+    createApp({
+      setup() {
+        const submitted = ref(false);
+        const toastMessage = ref('');
+        const isGeneratingAvatar = ref(false);
+        const customAvatarUrl = ref(CUTE_GIRL_AVATARS[0].url);
+
+        const formData = reactive({
+          name: 'Joyce',
+          engName: 'Angel',
+          phone: '0912-345-678',
+          birthday: '2008-05-20',
+          zodiac: '金牛座',
+          mbti: 'ENFP',
+          family: '爸媽、妹妹、一隻小貓 🐱',
+          residence: '台中市',
+          commute: '公車 🚌',
+          sleepTime: '23:30 🌙',
+          adjectives: '活潑、貼心、夢幻 💖',
+          customInterest: '手帳DIY 🎨、底片攝影 📷、追動漫 ✨',
+          customStrength: '繪畫插畫 🖌️、彈鋼琴 🎹、溝通傾聽 🎧',
+          stressRelief: '戴耳機聽歌 🎧、吃草莓蛋糕 🍰、去海邊散步 🌊',
+          strengthSubject: '英文、美術 🎨',
+          weakSubject: '數學、物理 📐',
+          goal: '順利通過高二英文檢定，並跟班上大家成為好朋友！🌟',
+          futureMajor: '視覺傳達設計系 🎨、外國語文學系 📚',
+          futureCareer: '插畫家 🖌️、繪本作家 📖 或跨國設計師 ✨',
+          peeves: '被冷落忽略、無預警的喧嘩噪雜、被誤解卻無法解釋 🥺',
+          secret: '睡覺時一定要抱著從小留到現在的小熊軟糖抱枕 🧸',
+          encouragement: '勇敢做自己，妳遠比自己想像的更閃耀！✨',
+          joyceNote: '希望能和大家共度一段溫馨又充實的校園時光！💖'
+        });
+
+        const avatarOptions = reactive({
+          hairStyle: 'long_wavy',
+          hairColorId: 'pink',
+          eyeColor: EYE_COLORS[0].color,
+          accessory: 'crown',
+          bgHue: 330
+        });
+
+        const showToast = (msg) => {
+          toastMessage.value = msg;
+          setTimeout(() => { toastMessage.value = ''; }, 3000);
+        };
+
+        const generateDynamicAvatarSvg = (options) => {
+          const hairColor = HAIR_COLORS.find(c => c.id === options.hairColorId) || HAIR_COLORS[0];
+          let accessorySvg = '';
+          if (options.accessory === 'crown') {
+            accessorySvg = `<path d="M42 28 L47 14 L60 23 L73 14 L78 28 Z" fill="%23FFD54F" stroke="%23FFA000" stroke-width="1.5"/><circle cx="60" cy="18" r="3" fill="%23E91E63"/><circle cx="47" cy="12" r="2.5" fill="%2300BCD4"/><circle cx="73" cy="12" r="2.5" fill="%2300BCD4"/>`;
+          } else if (options.accessory === 'ribbon') {
+            accessorySvg = `<path d="M30 32 Q40 20 50 32 Q40 42 30 32 Z" fill="%23FF1493"/><path d="M90 32 Q80 20 70 32 Q80 42 90 32 Z" fill="%23FF1493"/><circle cx="60" cy="32" r="5" fill="%23FF69B4"/>`;
+          } else if (options.accessory === 'cat') {
+            accessorySvg = `<path d="M26 36 L46 14 L52 38 Z" fill="${encodeURIComponent(hairColor.end)}"/><path d="M94 36 L74 14 L68 38 Z" fill="${encodeURIComponent(hairColor.end)}"/><path d="M31 34 L43 20 L46 36 Z" fill="%23FFB6C1"/><path d="M89 34 L77 20 L74 36 Z" fill="%23FFB6C1"/>`;
+          } else if (options.accessory === 'headphones') {
+            accessorySvg = `<rect x="20" y="46" width="14" height="24" rx="7" fill="%2300E5FF" stroke="%23FFF" stroke-width="1.5"/><rect x="86" y="46" width="14" height="24" rx="7" fill="%2300E5FF" stroke="%23FFF" stroke-width="1.5"/><path d="M27 46 C27 18 93 18 93 46" stroke="%2300E5FF" stroke-width="5" fill="none"/>`;
+          } else if (options.accessory === 'glasses') {
+            accessorySvg = `<circle cx="48" cy="58" r="9.5" stroke="%238D6E63" stroke-width="2.5" fill="none"/><circle cx="72" cy="58" r="9.5" stroke="%238D6E63" stroke-width="2.5" fill="none"/><line x1="57.5" y1="58" x2="62.5" y2="58" stroke="%238D6E63" stroke-width="2.5"/>`;
+          } else if (options.accessory === 'flower') {
+            accessorySvg = `<circle cx="36" cy="30" r="6" fill="%23FFB6C1"/><circle cx="44" cy="34" r="6" fill="%23FFB6C1"/><circle cx="32" cy="40" r="6" fill="%23FFB6C1"/><circle cx="38" cy="35" r="3" fill="%23FFF"/>`;
+          }
+
+          const svgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="hsl(${options.bgHue}, 100%, 94%)"/>
+                  <stop offset="100%" stop-color="hsl(${(options.bgHue + 40) % 360}, 100%, 85%)"/>
+                </linearGradient>
+                <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="${encodeURIComponent(hairColor.start)}"/>
+                  <stop offset="100%" stop-color="${encodeURIComponent(hairColor.end)}"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" fill="url(%23bgGrad)" rx="60"/>
+              <path d="M30 85 Q60 60 90 85 L96 120 L24 120 Z" fill="%23FF80AB"/>
+              <path d="M32 44 Q60 25 88 44 C92 75 86 102 83 107 Q60 112 37 107 C34 102 28 75 32 44 Z" fill="url(%23hairGrad)"/>
+              <circle cx="60" cy="58" r="25" fill="%23FFF0E5"/>
+              <ellipse cx="50" cy="58" rx="4" ry="5.5" fill="${encodeURIComponent(options.eyeColor)}"/>
+              <ellipse cx="70" cy="58" rx="4" ry="5.5" fill="${encodeURIComponent(options.eyeColor)}"/>
+              <circle cx="51.5" cy="55.5" r="1.6" fill="%23FFF"/>
+              <circle cx="71.5" cy="55.5" r="1.6" fill="%23FFF"/>
+              <path d="M56 66 Q60 70 64 66" stroke="%23D81B60" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="42" cy="63" rx="5" ry="3" fill="%23FFB6C1" opacity="0.85"/>
+              <ellipse cx="78" cy="63" rx="5" ry="3" fill="%23FFB6C1" opacity="0.85"/>
+              ${accessorySvg}
+            </svg>
+          `;
+          return `data:image/svg+xml;utf8,${svgContent.replace(/\s+/g, ' ').trim()}`;
+        };
+
+        const updateCustomAvatar = () => {
+          customAvatarUrl.value = generateDynamicAvatarSvg(avatarOptions);
+          showToast('✨ 頭像造型已更新！');
+        };
+
+        const selectAvatar = (girl) => {
+          customAvatarUrl.value = girl.url;
+          showToast(`已選擇「${girl.name}」頭像！`);
+        };
+
+        const generateRandomAvatar = () => {
+          isGeneratingAvatar.value = true;
+          showToast('✨ 正在動態生成專屬夢幻插畫頭像...');
+          setTimeout(() => {
+            avatarOptions.hairStyle = HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)].id;
+            avatarOptions.hairColorId = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)].id;
+            avatarOptions.eyeColor = EYE_COLORS[Math.floor(Math.random() * EYE_COLORS.length)].color;
+            avatarOptions.accessory = ACCESSORIES[Math.floor(Math.random() * ACCESSORIES.length)].id;
+            avatarOptions.bgHue = Math.floor(Math.random() * 360);
+            
+            customAvatarUrl.value = generateDynamicAvatarSvg(avatarOptions);
+            isGeneratingAvatar.value = false;
+            showToast('💖 專屬頭像生成成功！');
+          }, 300);
+        };
+
+        const handleSubmit = () => {
+          submitted.value = true;
+          showToast('✨ 專屬夢幻卡片已成功生成！');
+        };
+
+        const downloadCard = async () => {
+          showToast('正在生成高清夢幻圖卡 PNG...');
+          const width = 800;
+
+          // Temp canvas for dynamic height calculation
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          let calcY = 365;
+          calcY += 5 * 56 + 10;
+
+          const measureSectionHeight = (content) => {
+            if (!content) return 0;
+            const blockWidth = width - 80;
+            tempCtx.font = '18px sans-serif';
+            const words = content.toString().split('');
+            let line = '';
+            let linesCount = 0;
+            for (let i = 0; i < words.length; i++) {
+              let testLine = line + words[i];
+              let metrics = tempCtx.measureText(testLine);
+              if (metrics.width > blockWidth - 40 && i > 0) {
+                linesCount++;
+                line = words[i];
+              } else {
+                line = testLine;
+              }
+            }
+            linesCount++;
+            return 40 + linesCount * 26 + 14;
+          };
+
+          const sections = [
+            formData.customStrength,
+            formData.stressRelief,
+            `最拿手：${formData.strengthSubject}  |  最頭痛：${formData.weakSubject}`,
+            formData.goal,
+            formData.futureMajor,
+            formData.futureCareer,
+            formData.peeves,
+            formData.secret,
+            formData.encouragement,
+            formData.joyceNote
+          ];
+
+          sections.forEach(sec => {
+            calcY += measureSectionHeight(sec);
+          });
+
+          const finalHeight = calcY + 30; // Remove blank bottom area
+
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = width;
+          canvas.height = finalHeight;
+
+          // Background
+          ctx.beginPath();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.roundRect(20, 20, width - 40, finalHeight - 40, 40);
+          ctx.fill();
+
+          // Header Grad
+          const grad = ctx.createLinearGradient(0, 0, width, 230);
+          grad.addColorStop(0, '#FFE4E1');
+          grad.addColorStop(1, '#F0E6FF');
+          ctx.beginPath();
+          ctx.fillStyle = grad;
+          ctx.roundRect(20, 20, width - 40, 210, [40, 40, 0, 0]);
+          ctx.fill();
+
+          // Header Text
+          const nameTitle = formData.name || 'Joyce';
+          ctx.fillStyle = '#FF1493';
+          ctx.font = 'bold 32px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${nameTitle} の 夢幻檔案卡片 🎀`, width / 2, 70);
+
+          ctx.fillStyle = '#9370DB';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillText('✨ 每一個妳，都是獨一無二且璀璨的星辰 ✨', width / 2, 115);
+
+          // Avatar Circle Position (Down to Y=210)
+          const avatarY = 210;
+          ctx.beginPath();
+          ctx.arc(width / 2, avatarY, 60, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+          ctx.strokeStyle = '#FF69B4';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+
+          // CORS Proxy Image Load
+          if (customAvatarUrl.value) {
+            const loadedImg = await new Promise((resolve) => {
+              if (customAvatarUrl.value.startsWith('data:')) {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = customAvatarUrl.value;
+                return;
+              }
+
+              const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(customAvatarUrl.value)}`;
+              const proxiedImg = new Image();
+              proxiedImg.crossOrigin = 'anonymous';
+              proxiedImg.onload = () => resolve(proxiedImg);
+              proxiedImg.onerror = () => {
+                const altProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(customAvatarUrl.value)}`;
+                const altImg = new Image();
+                altImg.crossOrigin = 'anonymous';
+                altImg.onload = () => resolve(altImg);
+                altImg.onerror = () => resolve(null);
+                altImg.src = altProxyUrl;
+              };
+              proxiedImg.src = proxyUrl;
+            });
+
+            if (loadedImg) {
+              try {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(width / 2, avatarY, 56, 0, Math.PI * 2);
+                ctx.clip();
+                
+                // Aspect Ratio Preservation (object-fit: cover)
+                const imgW = loadedImg.naturalWidth || loadedImg.width;
+                const imgH = loadedImg.naturalHeight || loadedImg.height;
+                let sx = 0, sy = 0, sWidth = imgW, sHeight = imgH;
+                if (imgW / imgH > 1) {
+                  sWidth = imgH;
+                  sx = (imgW - imgH) / 2;
+                } else {
+                  sHeight = imgW;
+                  sy = (imgH - imgW) / 2;
+                }
+
+                ctx.drawImage(loadedImg, sx, sy, sWidth, sHeight, width / 2 - 56, avatarY - 56, 112, 112);
+                ctx.restore();
+              } catch (e) {
+                console.error('Canvas image error:', e);
+              }
+            }
+          }
+
+          // Name and Info
+          ctx.fillStyle = '#C71585';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${formData.name || 'Joyce'} (${formData.engName || 'Angel'})`, width / 2, 295);
+
+          ctx.fillStyle = '#8A2BE2';
+          ctx.font = 'bold 19px sans-serif';
+          ctx.fillText(`${formData.zodiac || '星座'} • ${formData.mbti || 'MBTI'} 💫`, width / 2, 330);
+
+          let currentY = 365;
+
+          const drawSection = (title, content, bgColor = '#FFF5F8', textColor = '#4A4A4A') => {
+            if (!content) return;
+            const blockWidth = width - 80;
+            const x = 40;
+            
+            ctx.font = '18px sans-serif';
+            const words = content.toString().split('');
+            let line = '';
+            let lines = [];
+            for (let i = 0; i < words.length; i++) {
+              let testLine = line + words[i];
+              let metrics = ctx.measureText(testLine);
+              if (metrics.width > blockWidth - 40 && i > 0) {
+                lines.push(line);
+                line = words[i];
+              } else {
+                line = testLine;
+              }
+            }
+            lines.push(line);
+
+            const blockHeight = 40 + lines.length * 26;
+
+            ctx.beginPath();
+            ctx.fillStyle = bgColor;
+            ctx.roundRect(x, currentY, blockWidth, blockHeight, 16);
+            ctx.fill();
+
+            ctx.fillStyle = '#D81B60';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(title, x + 20, currentY + 28);
+
+            ctx.fillStyle = textColor;
+            ctx.font = '18px sans-serif';
+            lines.forEach((l, idx) => {
+              ctx.fillText(l, x + 20, currentY + 54 + idx * 26);
+            });
+
+            currentY += blockHeight + 14;
+          };
+
+          const summaryPairs = [
+            [`👑 中文姓名: ${formData.name}`, `✨ 英文名字: ${formData.engName}`],
+            [`📱 手機號碼: ${formData.phone}`, `🎂 生日日期: ${formData.birthday}`],
+            [`📍 居住縣市: ${formData.residence}`, `🚌 通勤方式: ${formData.commute}`],
+            [`🌙 就寢時間: ${formData.sleepTime}`, `🏠 家中成員: ${formData.family}`],
+            [`🌟 個人形容詞: ${formData.adjectives}`, `🎨 興趣手帳: ${formData.customInterest}`]
+          ];
+
+          summaryPairs.forEach(([col1, col2]) => {
+            ctx.fillStyle = '#FAF0F6';
+            ctx.beginPath();
+            ctx.roundRect(40, currentY, width - 80, 48, 12);
+            ctx.fill();
+
+            ctx.fillStyle = '#C2185B';
+            ctx.font = 'bold 15px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(col1, 55, currentY + 30);
+            ctx.fillText(col2, width / 2 + 15, currentY + 30);
+
+            currentY += 56;
+          });
+
+          currentY += 10;
+
+          drawSection('💪 個人擅長專長', formData.customStrength, '#F3E5F5', '#388E3C');
+          drawSection('🔋 滿血復原法 & 紓壓', formData.stressRelief, '#E8F5E9', '#2E7D32');
+          drawSection('📚 拿手 vs 頭痛科目', `最拿手：${formData.strengthSubject}  |  最頭痛：${formData.weakSubject}`, '#FFF3E0', '#E65100');
+          drawSection('🎯 高二目標', formData.goal, '#E0F7FA', '#006064');
+          drawSection('🎓 大學可能想念的科系', formData.futureMajor, '#E8EAF6', '#283593');
+          drawSection('🌟 未來想成為 / 從事的職業', formData.futureCareer, '#F3E5F5', '#4A148C');
+          drawSection('⚡ 地雷與相處禁忌', formData.peeves, '#FFEBEE', '#C62828');
+          drawSection('🤫 不為人知的小秘密', formData.secret, '#F3E5F5', '#6A1B9A');
+          drawSection('🌈 自我鼓勵座右銘', formData.encouragement, '#FFF8E1', '#F57F17');
+          drawSection(`💌 想對 ${nameTitle} 說的悄悄話`, formData.joyceNote, '#FCE4EC', '#880E4F');
+
+          const dataUrl = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.download = `${nameTitle}_dreamy_profile.png`;
+          link.href = dataUrl;
+          link.click();
+        };
+
+        return {
+          submitted,
+          toastMessage,
+          isGeneratingAvatar,
+          customAvatarUrl,
+          formData,
+          avatarOptions,
+          cuteGirlAvatars: CUTE_GIRL_AVATARS,
+          hairStyles: HAIR_STYLES,
+          hairColors: HAIR_COLORS,
+          eyeColors: EYE_COLORS,
+          accessories: ACCESSORIES,
+          updateCustomAvatar,
+          selectAvatar,
+          generateRandomAvatar,
+          handleSubmit,
+          downloadCard
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
